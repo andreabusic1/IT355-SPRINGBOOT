@@ -1,11 +1,11 @@
 package com.metropolitan.projekat.jwt;
 
-
 import com.metropolitan.projekat.auth.TokenBlackListService;
 import com.metropolitan.projekat.entiteti.User;
 import com.metropolitan.projekat.service.UserService;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
@@ -24,30 +24,36 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final UserService adminService;
     private final TokenBlackListService tokenBlackListService;
 
-
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws JwtException, IOException {
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws IOException, ServletException {
 
         try {
             String authHeader = request.getHeader("Authorization"); // Bearer jwt
 
-            if(authHeader == null || !authHeader.startsWith("Bearer ")){
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                // Ako zahtev ne sadrži JWT token, samo ga prosledi dalje
                 filterChain.doFilter(request, response);
-                //response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Please login - No token provided");
-                //extracted(response, "Please login - No token provided");
                 return;
             }
-            String jwt = authHeader.split(" ")[1];
+
+            String jwt = authHeader.substring(7);
+
+            // Provera da li je zahtev za prikazivanje proizvoda ili kreiranje korisničke adrese
+            if (request.getRequestURI().startsWith("/api/products") ||
+                    (request.getMethod().equals("POST") && request.getRequestURI().startsWith("/api/userAddresses"))) {
+                // Ako jeste, dozvoli pristup bez JWT tokena
+                filterChain.doFilter(request, response);
+                return;
+            }
 
             if (tokenBlackListService.isTokenBlacklisted(jwt)) {
-                //response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Please login - Token blacklisted");
                 extracted(response, "Please login - Token blacklisted");
                 return;
             }
 
             String username = jwtService.extractUsername(jwt);
 
-            User user = adminService.findByUsername(username).get();
+            User user = adminService.findByUsername(username).orElseThrow(() -> new RuntimeException("User not found"));
 
             UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                     username, null, user.getAuthorities()
@@ -57,10 +63,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
 
         } catch (JwtException e) {
-            System.err.println(e.getMessage());
-            //response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid JWT signature, please verify your JWT token. Please login.");
             extracted(response, e.getMessage());
-        }catch (Exception e) {
+        } catch (Exception e) {
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
         }
 

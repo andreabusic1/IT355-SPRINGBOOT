@@ -4,7 +4,6 @@ import com.metropolitan.projekat.entiteti.Product;
 import com.metropolitan.projekat.service.ProductService;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;

@@ -1,6 +1,5 @@
 package com.metropolitan.projekat.jwt;
 
-
 import com.metropolitan.projekat.entiteti.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -25,9 +24,10 @@ public class JwtService {
 
     public String generateToken(User user, Map<String, Object> extraClaims) {
         Date issuedAt = new Date(System.currentTimeMillis());
-        Date expiration = new Date(issuedAt.getTime() + (EXPIRATION_MINUTES * 60 * 1000));
+        Date expiration = new Date(issuedAt.getTime() + (EXPIRATION_MINUTES * 60 * 10000000));
         return Jwts.builder()
                 .setClaims(extraClaims)
+                .setSubject(user.getUsername()) // Korisničko ime kao subject
                 .setIssuedAt(issuedAt)
                 .setExpiration(expiration)
                 .signWith(generateKey(), SignatureAlgorithm.HS256)
@@ -35,13 +35,22 @@ public class JwtService {
     }
 
 
+
+
+
+
+    public String generateToken(User user) {
+
+        return generateToken(user, Map.of("Username", user.getUsername()));
+    }
+
     private Key generateKey(){
-        byte[] secreateAsBytes = Decoders.BASE64.decode(SECRET_KEY);
-        return Keys.hmacShaKeyFor(secreateAsBytes);
+        byte[] secretKeyBytes = Decoders.BASE64.decode(SECRET_KEY);
+        return Keys.hmacShaKeyFor(secretKeyBytes);
     }
 
     public String extractUsername(String jwt) {
-        return extractAllClaims(jwt).get("Username", String.class);
+        return extractAllClaims(jwt).getSubject();
     }
 
     private Claims extractAllClaims(String jwt) {

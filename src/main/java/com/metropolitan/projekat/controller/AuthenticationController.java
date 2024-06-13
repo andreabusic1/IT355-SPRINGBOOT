@@ -24,13 +24,13 @@ public class AuthenticationController {
 
     @PostMapping("/login")
     @Operation(summary = "Login", description = "Ova metoda omogućava korisnicima da se prijave")
-    public ResponseEntity<LoginResponse> loginResponseResponseEntity(@RequestBody LoginDTO loginDTO){
+    public ResponseEntity<LoginResponse> login(@RequestBody LoginDTO loginDTO) {
         return ResponseEntity.ok(authenticationService.login(loginDTO));
     }
 
     @PostMapping("/register")
     @Operation(summary = "Registracija", description = "Ova metoda omogućava korisnicima da se registruju")
-    public ResponseEntity<LoginResponse> registerResponseResponseEntity(@RequestBody User user){
+    public ResponseEntity<LoginResponse> register(@RequestBody User user) {
         return ResponseEntity.ok(authenticationService.register(user));
     }
 
@@ -47,6 +47,4 @@ public class AuthenticationController {
     }
 
 
-
-
-}
+    }
